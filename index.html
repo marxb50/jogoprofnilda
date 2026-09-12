@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Game Nilda - As Obras de Parnamirim | Edição SNES 16-Bit</title>
+  <link rel="icon" type="image/png" href="assets/ui/parnamirim_logo.png">
+  <link rel="stylesheet" href="style.css?v=2.0">
+  <script>
+    // Previne rolagem acidental e gestos de zoom em celulares
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+    window.addEventListener('keydown', function(e) {
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) || e.key === ' ') {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  </script>
+</head>
+<body>
+
+  <!-- Container Geral Responsivo -->
+  <div class="app-root" id="appRoot">
+
+    <!-- CABEÇALHO (Visível no PC e modo vertical) -->
+    <header class="header-bar" id="headerBar">
+      <div class="brand-section">
+        <img src="assets/ui/parnamirim_logo.png" alt="Prefeitura de Parnamirim" class="brand-logo" onerror="this.style.display='none'">
+        <div class="brand-titles">
+          <h1>GAME NILDA - AS OBRAS DE PARNAMIRIM</h1>
+          <p>Prefeita Professora Nilda • Macrodrenagem, Educação, Saúde e Zeladoria</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <button class="status-btn" id="btnSoundTop" title="Ativar/Desativar Som (M)">🔊 Som</button>
+        <button class="status-btn" id="btnFullscreenTop" title="Tela Cheia (F)">⛶ Tela Cheia</button>
+        <button class="status-btn btn-restart" id="btnRestartTop" title="Reiniciar (R)">🔄 Reiniciar</button>
+      </div>
+    </header>
+
+    <!-- ÁREA CENTRAL DO JOGO / ARCADE CABINET -->
+    <main class="game-viewport-container" id="viewportContainer">
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
+        <div class="crt-overlay"></div>
+        
+        <!-- Tela de Carregamento -->
+        <div class="loading-screen" id="loadingScreen">
+          <div class="spinner"></div>
+          <p style="font-weight:800; color:#f5b700; font-size:1.15rem; letter-spacing:1px;">
+            CARREGANDO AS OBRAS DE PARNAMIRIM...
+          </p>
+        </div>
+      </div>
+
+      <!-- CONTROLES TOUCH FLUTUANTES (Modo Celular Paisagem / Deitado) -->
+      <div class="touch-landscape-overlay" id="touchLandscapeOverlay">
+        <!-- D-Pad Esquerdo -->
+        <div class="dpad-cluster">
+          <button class="touch-btn dpad-btn" id="btnLandLeft" aria-label="Esquerda">◀</button>
+          <button class="touch-btn dpad-btn" id="btnLandRight" aria-label="Direita">▶</button>
+        </div>
+        <!-- Botões de Ação Direitos -->
+        <div class="action-cluster">
+          <button class="touch-btn action-circle-btn btn-talk" id="btnLandTalk" aria-label="Conversar / Interagir">
+            <span>B</span>
+            <small>FALAR</small>
+          </button>
+          <button class="touch-btn action-circle-btn btn-jump" id="btnLandJump" aria-label="Pular">
+            <span>A</span>
+            <small>PULAR</small>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- PAINEL DE CONTROLE MOBILE INFERIOR (Modo Celular em Pé / Retrato - Console Portátil) -->
+    <section class="handheld-controller" id="handheldController">
+      <div class="controller-chassis">
+        
+        <!-- D-Pad em Cruz estilo Game Boy / SNES -->
+        <div class="dpad-cross-box">
+          <div class="dpad-cross">
+            <button class="dpad-btn-dir dpad-up" id="btnPortUp">▲</button>
+            <button class="dpad-btn-dir dpad-left" id="btnPortLeft">◀</button>
+            <div class="dpad-center"></div>
+            <button class="dpad-btn-dir dpad-right" id="btnPortRight">▶</button>
+            <button class="dpad-btn-dir dpad-down" id="btnPortDown">▼</button>
+          </div>
+        </div>
+
+        <!-- Botões de Menu Centrais (Start / Select / Sound) -->
+        <div class="center-pill-buttons">
+          <button class="pill-btn" id="btnPortSound">SOM</button>
+          <button class="pill-btn" id="btnPortRestart">REINICIAR</button>
+        </div>
+
+        <!-- Botões de Ação [B] e [A] Angulados -->
+        <div class="ab-buttons-box">
+          <button class="ab-btn btn-b-talk" id="btnPortTalk">
+            <span class="ab-label">B</span>
+            <span class="ab-sub">FALAR</span>
+          </button>
+          <button class="ab-btn btn-a-jump" id="btnPortJump">
+            <span class="ab-label">A</span>
+            <span class="ab-sub">PULAR</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- GUIA DE CONTROLES PC (Aparece em telas largas) -->
+    <footer class="desktop-footer" id="desktopFooter">
+      <div class="pc-keys">
+        <span>🎮 <strong>Controles PC:</strong></span>
+        <span class="key-tag">←</span> <span class="key-tag">→</span> ou <span class="key-tag">A</span> <span class="key-tag">D</span> Andar
+        <span class="key-tag">ESPAÇO</span> ou <span class="key-tag">W</span> Pular
+        <span class="key-tag">E</span> ou <span class="key-tag">Z</span> Conversar / Interagir
+        <span class="key-tag">M</span> Som
+        <span class="key-tag">F</span> Tela Cheia
+      </div>
+      <div class="portal-link-box">
+        <span style="color:#f5b700; font-weight:700;">Prefeitura de Parnamirim</span> • Edição Oficial SNES 16-Bit
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="audio.js?v=2.0"></script>
+  <script src="game.js?v=2.0"></script>
+</body>
+</html>

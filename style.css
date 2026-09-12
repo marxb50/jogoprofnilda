@@ -1,0 +1,553 @@
+/* ==========================================================================
+   GAME NILDA - AS OBRAS DE PARNAMIRIM
+   SISTEMA DE ESTILOS MULTIPLATAFORMA (PC, CELULAR EM PÉ E CELULAR DEITADO)
+   ========================================================================== */
+
+:root {
+  --accent-gold: #f5b700;
+  --accent-gold-dark: #b45309;
+  --accent-blue: #0284c7;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --bg-dark: #070c14;
+  --bg-card: #0f1a2a;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000000;
+  color: var(--text-main);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Container Principal Flexível */
+.app-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background: radial-gradient(circle at 50% 30%, #112035 0%, #060a12 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ==========================================================================
+   1. CABEÇALHO INSTITUCIONAL (DESKTOP & PORTRAIT)
+   ========================================================================== */
+.header-bar {
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 14px;
+  background: rgba(15, 26, 42, 0.92);
+  border-bottom: 2px solid var(--accent-gold);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  height: 38px;
+  object-fit: contain;
+}
+
+.brand-titles h1 {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--accent-gold);
+  letter-spacing: 0.5px;
+}
+
+.brand-titles p {
+  font-size: 0.75rem;
+  color: #6ee7b7;
+  font-weight: 600;
+}
+
+.header-status {
+  display: flex;
+  gap: 8px;
+}
+
+.status-btn {
+  background: #1e293b;
+  color: #f1f5f9;
+  border: 1.5px solid #475569;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.status-btn:hover {
+  background: #334155;
+  border-color: var(--accent-gold);
+}
+
+.status-btn.btn-restart {
+  background: #92400e;
+  border-color: #f59e0b;
+}
+
+/* ==========================================================================
+   2. VIEWPORT DO JOGO / CANVAS
+   ========================================================================== */
+.game-viewport-container {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  max-width: 1280px;
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 1280px;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  background: #000000;
+  border: 3px solid var(--accent-gold);
+  border-radius: 8px;
+  box-shadow: 0 0 30px rgba(245, 183, 0, 0.25), 0 10px 40px rgba(0,0,0,0.8);
+  overflow: hidden;
+}
+
+#gameCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.crt-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%);
+  background-size: 100% 3px;
+  opacity: 0.45;
+}
+
+.loading-screen {
+  position: absolute;
+  inset: 0;
+  background: #090e17;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 100;
+}
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid #1e293b;
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   3. CONTROLES PAISAGEM / CELULAR DEITADO (TOUCH OVERLAY)
+   ========================================================================== */
+.touch-landscape-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 24px;
+  z-index: 60;
+}
+
+.dpad-cluster, .action-cluster {
+  pointer-events: auto;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.touch-btn {
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.dpad-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.65);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  transition: transform 0.08s, background 0.08s;
+}
+
+.dpad-btn:active, .dpad-btn.active {
+  background: rgba(2, 132, 199, 0.85);
+  border-color: #38bdf8;
+  transform: scale(0.92);
+}
+
+.action-circle-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.6);
+  transition: transform 0.08s;
+}
+
+.action-circle-btn span {
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.action-circle-btn small {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+.action-circle-btn.btn-jump {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.75), rgba(5, 150, 105, 0.85));
+  border: 2px solid rgba(167, 243, 208, 0.8);
+  color: #ffffff;
+}
+
+.action-circle-btn.btn-jump:active, .action-circle-btn.btn-jump.active {
+  background: rgba(16, 185, 129, 0.95);
+  transform: scale(0.91);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+}
+
+.action-circle-btn.btn-talk {
+  background: radial-gradient(circle, rgba(245, 183, 0, 0.75), rgba(217, 119, 6, 0.85));
+  border: 2px solid rgba(254, 240, 138, 0.8);
+  color: #111827;
+}
+
+.action-circle-btn.btn-talk:active, .action-circle-btn.btn-talk.active {
+  background: rgba(245, 183, 0, 0.95);
+  transform: scale(0.91);
+  box-shadow: 0 0 20px rgba(245, 183, 0, 0.8);
+}
+
+/* ==========================================================================
+   4. CONSOLE PORTÁTIL (CELULAR EM PÉ / RETRATO)
+   ========================================================================== */
+.handheld-controller {
+  display: none;
+  width: 100%;
+  padding: 12px 10px 18px;
+  background: #0a111a;
+  border-top: 3px solid #233b5c;
+  z-index: 30;
+  box-sizing: border-box;
+}
+
+.controller-chassis {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+/* D-Pad em Cruz */
+.dpad-cross {
+  position: relative;
+  width: 116px;
+  height: 116px;
+  flex-shrink: 0;
+}
+
+.dpad-btn-dir {
+  position: absolute;
+  background: #1e293b;
+  border: 2px solid #475569;
+  color: #94a3b8;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.dpad-btn-dir:active, .dpad-btn-dir.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+.dpad-up {
+  top: 0;
+  left: 40px;
+  width: 36px;
+  height: 40px;
+  border-radius: 6px 6px 0 0;
+}
+
+.dpad-down {
+  bottom: 0;
+  left: 40px;
+  width: 36px;
+  height: 40px;
+  border-radius: 0 0 6px 6px;
+}
+
+.dpad-left {
+  top: 40px;
+  left: 0;
+  width: 40px;
+  height: 36px;
+  border-radius: 6px 0 0 6px;
+}
+
+.dpad-right {
+  top: 40px;
+  right: 0;
+  width: 40px;
+  height: 36px;
+  border-radius: 0 6px 6px 0;
+}
+
+.dpad-center {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 36px;
+  height: 36px;
+  background: #1e293b;
+}
+
+/* Botões Centrais (Pill) */
+.center-pill-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pill-btn {
+  background: #334155;
+  border: 1.5px solid #64748b;
+  border-radius: 12px;
+  color: #cbd5e1;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 5px 11px;
+  transform: rotate(-15deg);
+  cursor: pointer;
+  user-select: none;
+}
+
+.pill-btn:active {
+  background: var(--accent-gold);
+  color: #000;
+}
+
+/* Botões [B] e [A] Angulados estilo clássico Game Boy / SNES */
+.ab-buttons-box {
+  position: relative;
+  width: 104px;
+  height: 82px;
+  flex-shrink: 0;
+}
+
+.ab-btn {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+  transition: transform 0.08s;
+}
+
+.ab-btn .ab-label {
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ab-btn .ab-sub {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.btn-b-talk {
+  left: 0;
+  bottom: 0;
+  background: #f59e0b;
+  color: #111827;
+  border: 2px solid #fde68a;
+}
+
+.btn-b-talk:active, .btn-b-talk.active {
+  background: #d97706;
+  transform: scale(0.92);
+}
+
+.btn-a-jump {
+  right: 0;
+  top: 0;
+  background: #10b981;
+  color: #ffffff;
+  border: 2px solid #a7f3d0;
+}
+
+.btn-a-jump:active, .btn-a-jump.active {
+  background: #059669;
+  transform: scale(0.92);
+}
+
+/* ==========================================================================
+   5. RODAPÉ DESKTOP / PC
+   ========================================================================== */
+.desktop-footer {
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(15, 26, 42, 0.9);
+  border-top: 2px solid #233b5c;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.key-tag {
+  display: inline-block;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-weight: 700;
+  font-family: monospace;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #475569;
+  margin: 0 2px;
+}
+
+/* ==========================================================================
+   6. RESPONSIVIDADE ESPECÍFICA (MEDIA QUERIES)
+   ========================================================================== */
+
+/* A) CELULAR DEITADO / PAISAGEM (LANDSCAPE) */
+@media (max-height: 550px) and (orientation: landscape) {
+  .header-bar {
+    display: none;
+  }
+  .desktop-footer {
+    display: none;
+  }
+  .handheld-controller {
+    display: none;
+  }
+  .app-root {
+    padding: 0;
+  }
+  .game-viewport-container {
+    max-width: 100vw;
+    height: 100vh;
+  }
+  .canvas-wrapper {
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+    aspect-ratio: auto;
+  }
+  .touch-landscape-overlay {
+    display: flex;
+  }
+}
+
+/* B) CELULAR EM PÉ / RETRATO (PORTRAIT) */
+@media (orientation: portrait) {
+  .header-bar {
+    display: none;
+  }
+  .desktop-footer {
+    display: none;
+  }
+  .touch-landscape-overlay {
+    display: none;
+  }
+  .handheld-controller {
+    display: block;
+  }
+  .canvas-wrapper {
+    width: 100vw;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
