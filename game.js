@@ -27,12 +27,12 @@
   const LEVEL_LENGTH = 9600;
   const GROUND_Y = 580;
 
-  // Física de Plataforma SNES / Mario
+  // Física de Plataforma SNES / Mario (Ajustado: Pulo mais alto e caminhada mais cadenciada)
   const GRAVITY = 1600;
-  const MOVE_SPEED = 340;
-  const ACCEL = 2000;
+  const MOVE_SPEED = 285;
+  const ACCEL = 1750;
   const FRICTION = 0.82;
-  const JUMP_FORCE = -640;
+  const JUMP_FORCE = -730;
   const JUMP_CUT_MULT = 0.45;
   const MAX_FALL_SPEED = 850;
 
@@ -130,14 +130,14 @@
       // Câmera
       this.camera = { x: 0, y: 0 };
 
-      // Jogadora: Prefeita Nilda
+      // Jogadora: Prefeita Nilda (ampliada em 10% para maior destaque)
       this.player = {
         x: 120,
-        y: 484,
+        y: 474,
         vx: 0,
         vy: 0,
-        w: 52,
-        h: 96,
+        w: 57,
+        h: 106,
         grounded: true,
         facing: 1,
         animTimer: 0,
@@ -477,13 +477,15 @@
           collected: false
         });
 
-        // NPC no topo da metade direita
+        // NPC no topo da plataforma (ampliado em 10% proporcionalmente com a Nilda)
         if (proj.npc) {
+          const npcW = Math.round(proj.npc.w * 1.10);
+          const npcH = Math.round(proj.npc.h * 1.10);
           this.npcs.push({
             x: proj.x + proj.npc.offsetRelX,
-            y: proj.y - proj.npc.h,
-            w: proj.npc.w,
-            h: proj.npc.h,
+            y: proj.y - npcH,
+            w: npcW,
+            h: npcH,
             name: proj.npc.name,
             badgeName: proj.npc.badgeName,
             portraitKey: proj.npc.portraitKey,
@@ -888,7 +890,7 @@
 
     restartGame() {
       this.player.x = 120;
-      this.player.y = 484;
+      this.player.y = 474;
       this.player.vx = 0;
       this.player.vy = 0;
       this.score = 0;
@@ -1184,7 +1186,7 @@
         const dx = Math.abs((p.x + p.w / 2) - (npc.x + npc.w / 2));
         // Permite falar tanto no mesmo nível quanto olhando de baixo da plataforma
         const dy = Math.abs((p.y + p.h) - (npc.y + npc.h));
-        if (dx < 95 && dy < 240) {
+        if (dx < 105 && dy < 250) {
           foundNearNpc = npc;
           break;
         }
@@ -1194,7 +1196,7 @@
       // Inicia conversa automaticamente se encostar no cidadão pela primeira vez
       if (foundNearNpc && !foundNearNpc.talked) {
         const directDist = Math.hypot(p.x - foundNearNpc.x, p.y - foundNearNpc.y);
-        if (directDist < 65) {
+        if (directDist < 75) {
           this.triggerNpcDialogue(foundNearNpc);
         }
       }
