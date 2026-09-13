@@ -832,9 +832,72 @@
         btn.addEventListener("pointerleave", stopAction, { passive: false });
       };
 
-      // Controles Paisagem (Deitado)
-      bindTouchBtn("btnLandLeft", () => { this.keys.left = true; }, () => { this.keys.left = false; });
-      bindTouchBtn("btnLandRight", () => { this.keys.right = true; }, () => { this.keys.right = false; });
+      // Analógico móvel compartilhado pelos modos em pé e deitado.
+      // O deslocamento do botão acompanha o dedo e permite diagonais sem
+      // transformar o eixo vertical em pulo: o salto continua exclusivo do A.
+      const joystickBase = document.getElementById("joystickBase");
+      const joystickKnob = document.getElementById("joystickKnob");
+      if (joystickBase && joystickKnob) {
+        let activePointerId = null;
+        const deadZone = 0.24;
+
+        const resetJoystick = () => {
+          this.keys.left = false;
+          this.keys.right = false;
+          this.keys.down = false;
+          joystickKnob.style.transform = "translate(-50%, -50%)";
+          joystickBase.classList.remove("active");
+          activePointerId = null;
+        };
+
+        const moveJoystick = (clientX, clientY) => {
+          const rect = joystickBase.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const knobRadius = joystickKnob.offsetWidth / 2;
+          const maxTravel = Math.max(1, rect.width / 2 - knobRadius - 5);
+          const rawX = clientX - centerX;
+          const rawY = clientY - centerY;
+          const distance = Math.hypot(rawX, rawY);
+          const clamp = distance > maxTravel ? maxTravel / distance : 1;
+          const visualX = rawX * clamp;
+          const visualY = rawY * clamp;
+          const axisX = visualX / maxTravel;
+          const axisY = visualY / maxTravel;
+
+          joystickKnob.style.transform = `translate(calc(-50% + ${visualX}px), calc(-50% + ${visualY}px))`;
+          this.keys.left = axisX < -deadZone;
+          this.keys.right = axisX > deadZone;
+          this.keys.down = axisY > deadZone;
+        };
+
+        joystickBase.addEventListener("pointerdown", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          activePointerId = ev.pointerId;
+          joystickBase.setPointerCapture(ev.pointerId);
+          joystickBase.classList.add("active");
+          moveJoystick(ev.clientX, ev.clientY);
+          if (window.soundManager) window.soundManager.init();
+          if (navigator.vibrate) navigator.vibrate(10);
+        }, { passive: false });
+
+        joystickBase.addEventListener("pointermove", (ev) => {
+          if (ev.pointerId !== activePointerId) return;
+          ev.preventDefault();
+          moveJoystick(ev.clientX, ev.clientY);
+        }, { passive: false });
+
+        ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+          joystickBase.addEventListener(eventName, (ev) => {
+            if (activePointerId !== null && ev.pointerId !== activePointerId) return;
+            ev.preventDefault();
+            resetJoystick();
+          }, { passive: false });
+        });
+      }
+
+      // Botões de ação do celular
       bindTouchBtn("btnLandJump", () => {
         if (this.dialogue.active) return;
         if (!this.keys.jumpHeld) { this.keys.jump = true; this.player.jumpBufferTimer = 0.16; }

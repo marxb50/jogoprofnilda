@@ -8,10 +8,29 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Game Nilda - As Obras de Parnamirim | Edição SNES 16-Bit</title>
   <link rel="icon" type="image/png" href="assets/ui/parnamirim_logo.png">
-  <link rel="stylesheet" href="style.css?v=2.2">
+  <link rel="stylesheet" href="style.css?v=3.0">
   <script>
     // Previne rolagem acidental e gestos de zoom em celulares
     document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.closest('#touchLandscapeOverlay') || e.target.closest('#gameCanvas')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // No celular deitado, usa a mesma entrada em tela cheia do jogo Cajulim.
+    function activateLandscapeFullscreen() {
+      if (window.innerWidth <= window.innerHeight || document.fullscreenElement || document.webkitFullscreenElement) return;
+      const page = document.documentElement;
+      if (page.requestFullscreen) page.requestFullscreen().catch(function() {});
+      else if (page.webkitRequestFullscreen) page.webkitRequestFullscreen();
+    }
+
+    window.addEventListener('orientationchange', function() {
+      setTimeout(activateLandscapeFullscreen, 180);
+    });
+    document.addEventListener('pointerdown', activateLandscapeFullscreen, { passive: true });
+
     window.addEventListener('keydown', function(e) {
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) || e.key === ' ') {
         e.preventDefault();
@@ -57,10 +76,17 @@
 
       <!-- CONTROLES TOUCH FLUTUANTES (Modo Celular Paisagem / Deitado) -->
       <div class="touch-landscape-overlay" id="touchLandscapeOverlay">
-        <!-- D-Pad Esquerdo -->
-        <div class="dpad-cluster">
-          <button class="touch-btn dpad-btn" id="btnLandLeft" aria-label="Esquerda">◀</button>
-          <button class="touch-btn dpad-btn" id="btnLandRight" aria-label="Direita">▶</button>
+        <!-- Analógico com as mesmas proporções da edição móvel do Cajulim -->
+        <div class="dpad-cluster joystick-zone" id="joystickZone">
+          <div class="joystick-base" id="joystickBase" role="application" aria-label="Controle analógico: arraste para andar">
+            <span class="joystick-direction direction-up" aria-hidden="true"></span>
+            <span class="joystick-direction direction-right" aria-hidden="true"></span>
+            <span class="joystick-direction direction-down" aria-hidden="true"></span>
+            <span class="joystick-direction direction-left" aria-hidden="true"></span>
+            <div class="joystick-knob" id="joystickKnob" aria-hidden="true">
+              <span class="joystick-shine"></span>
+            </div>
+          </div>
         </div>
         <!-- Botões de Ação Direitos -->
         <div class="action-cluster">
@@ -75,42 +101,6 @@
         </div>
       </div>
     </main>
-
-    <!-- PAINEL DE CONTROLE MOBILE INFERIOR (Modo Celular em Pé / Retrato - Console Portátil) -->
-    <section class="handheld-controller" id="handheldController">
-      <div class="controller-chassis">
-        
-        <!-- D-Pad em Cruz estilo Game Boy / SNES -->
-        <div class="dpad-cross-box">
-          <div class="dpad-cross">
-            <button class="dpad-btn-dir dpad-up" id="btnPortUp">▲</button>
-            <button class="dpad-btn-dir dpad-left" id="btnPortLeft">◀</button>
-            <div class="dpad-center"></div>
-            <button class="dpad-btn-dir dpad-right" id="btnPortRight">▶</button>
-            <button class="dpad-btn-dir dpad-down" id="btnPortDown">▼</button>
-          </div>
-        </div>
-
-        <!-- Botões de Menu Centrais (Start / Select / Sound) -->
-        <div class="center-pill-buttons">
-          <button class="pill-btn" id="btnPortSound">SOM</button>
-          <button class="pill-btn" id="btnPortRestart">REINICIAR</button>
-        </div>
-
-        <!-- Botões de Ação [B] e [A] Angulados -->
-        <div class="ab-buttons-box">
-          <button class="ab-btn btn-b-talk" id="btnPortTalk">
-            <span class="ab-label">B</span>
-            <span class="ab-sub">FALAR</span>
-          </button>
-          <button class="ab-btn btn-a-jump" id="btnPortJump">
-            <span class="ab-label">A</span>
-            <span class="ab-sub">PULAR</span>
-          </button>
-        </div>
-
-      </div>
-    </section>
 
     <!-- GUIA DE CONTROLES PC (Aparece em telas largas) -->
     <footer class="desktop-footer" id="desktopFooter">
@@ -130,6 +120,6 @@
   </div>
 
   <script src="audio.js?v=2.3"></script>
-  <script src="game.js?v=2.8"></script>
+  <script src="game.js?v=3.0"></script>
 </body>
 </html>
