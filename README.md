@@ -55,6 +55,7 @@ O jogo conta com 12 estações temáticas com itens históricos coletáveis e NP
 - **HTML5 Canvas** (renderização pixel-perfect 60 FPS)
 - **JavaScript Moderno** (sem dependências pesadas, carregamento instantâneo)
 - **Web Audio API** (músicas e efeitos sonoros chiptune sintetizados em tempo real)
+- **Microsoft Edge Neural TTS** (vozes sintéticas geradas por IA para os NPCs; a Prefeita Professora Nilda permanece sem locução)
 - **CSS3 Responsivo** (layout adaptativo para PC e dispositivos móveis)
 
 ---

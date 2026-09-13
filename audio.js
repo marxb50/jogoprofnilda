@@ -9,6 +9,65 @@ class SoundManager {
         this.muted = false;
         this.bgmPlaying = false;
         this.bgmTimer = null;
+        this.dialogueAudio = null;
+        this.dialogueAudioToken = 0;
+        this.dialogueVoicePaths = {
+            portrait_pai_aluno: [
+                "assets/audio/npc_voices/seu_francisco_01.mp3",
+                "assets/audio/npc_voices/seu_francisco_02.mp3",
+                "assets/audio/npc_voices/seu_francisco_03.mp3"
+            ],
+            portrait_moradora: [
+                "assets/audio/npc_voices/dona_socorro_01.mp3",
+                "assets/audio/npc_voices/dona_socorro_02.mp3",
+                "assets/audio/npc_voices/dona_socorro_03.mp3"
+            ],
+            portrait_gari: [
+                "assets/audio/npc_voices/maria_gari_01.mp3",
+                "assets/audio/npc_voices/maria_gari_02.mp3",
+                "assets/audio/npc_voices/maria_gari_03.mp3"
+            ],
+            portrait_professora: [
+                "assets/audio/npc_voices/professora_claudia_01.mp3",
+                "assets/audio/npc_voices/professora_claudia_02.mp3",
+                "assets/audio/npc_voices/professora_claudia_03.mp3"
+            ],
+            portrait_medico: [
+                "assets/audio/npc_voices/dr_marcelo_01.mp3",
+                "assets/audio/npc_voices/dr_marcelo_02.mp3",
+                "assets/audio/npc_voices/dr_marcelo_03.mp3"
+            ],
+            portrait_aluna: [
+                "assets/audio/npc_voices/sofia_01.mp3",
+                "assets/audio/npc_voices/sofia_02.mp3",
+                "assets/audio/npc_voices/sofia_03.mp3"
+            ],
+            portrait_engenheiro: [
+                "assets/audio/npc_voices/engenheiro_roberto_01.mp3",
+                "assets/audio/npc_voices/engenheiro_roberto_02.mp3",
+                "assets/audio/npc_voices/engenheiro_roberto_03.mp3"
+            ],
+            portrait_mae_cmei: [
+                "assets/audio/npc_voices/dona_lucia_01.mp3",
+                "assets/audio/npc_voices/dona_lucia_02.mp3",
+                "assets/audio/npc_voices/dona_lucia_03.mp3"
+            ],
+            portrait_guarda: [
+                "assets/audio/npc_voices/inspetor_santos_01.mp3",
+                "assets/audio/npc_voices/inspetor_santos_02.mp3",
+                "assets/audio/npc_voices/inspetor_santos_03.mp3"
+            ],
+            portrait_comerciante: [
+                "assets/audio/npc_voices/seu_pedro_01.mp3",
+                "assets/audio/npc_voices/seu_pedro_02.mp3",
+                "assets/audio/npc_voices/seu_pedro_03.mp3"
+            ],
+            portrait_cajulim: [
+                "assets/audio/npc_voices/cajulim_01.mp3",
+                "assets/audio/npc_voices/cajulim_02.mp3",
+                "assets/audio/npc_voices/cajulim_03.mp3"
+            ]
+        };
         this.stepTimer = 0;
         this.tempo = 126; // BPM estilo SNES Platformer
         this.notes = [
@@ -45,11 +104,52 @@ class SoundManager {
             btn.innerHTML = this.muted ? '🔇 Som: OFF (M)' : '🔊 Som: ON (M)';
         }
         if (this.muted) {
+            this.stopDialogueVoice();
             this.stopBgm();
+        } else if (window.game && window.game.dialogue && window.game.dialogue.active) {
+            const dialogue = window.game.dialogue;
+            this.playDialogueLine(dialogue.portraitKey, dialogue.currentLine);
         } else {
             this.startBgm();
         }
         return this.muted;
+    }
+
+    hasDialogueVoice(portraitKey, lineIndex) {
+        const lines = this.dialogueVoicePaths[portraitKey];
+        return Boolean(lines && lines[lineIndex]);
+    }
+
+    playDialogueLine(portraitKey, lineIndex) {
+        this.stopDialogueVoice();
+        if (this.muted || !this.hasDialogueVoice(portraitKey, lineIndex)) return false;
+
+        const token = ++this.dialogueAudioToken;
+        const audio = new Audio(this.dialogueVoicePaths[portraitKey][lineIndex]);
+        audio.preload = "auto";
+        audio.volume = 0.95;
+        this.dialogueAudio = audio;
+
+        const release = () => {
+            if (this.dialogueAudioToken === token) this.dialogueAudio = null;
+        };
+        audio.addEventListener("ended", release, { once: true });
+        audio.addEventListener("error", release, { once: true });
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(release);
+        }
+        return true;
+    }
+
+    stopDialogueVoice() {
+        this.dialogueAudioToken++;
+        if (!this.dialogueAudio) return;
+        try {
+            this.dialogueAudio.pause();
+            this.dialogueAudio.currentTime = 0;
+        } catch (_) {}
+        this.dialogueAudio = null;
     }
 
     // Pulo clássico SNES (Sweep ascendente de onda quadrada)

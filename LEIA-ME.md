@@ -36,12 +36,20 @@ Jogo de plataforma 2D em pixel art 16-bit estilo Super Nintendo (SNES), estrelad
 
 ---
 
+## 📐 Escala e leitura 16-bit
+
+- A área de jogo continua em 1280 × 720, com aproximação de câmera de 1,10×.
+- Nilda usa sprite visual de 88 × 132 e colisão de 50 × 96 centralizada nos pés.
+- NPCs preservam a proporção de cada imagem e aparecem com cerca de 140–150 px de altura no PC.
+- O celular em pé usa corte vertical estilo Game Boy; os controles ficam em um console inferior com botões de ação de 58 px.
+
 ## 🖼️ Assets em Pixel Art 16-Bit Criados
 
 - **Prefeita Professora Nilda**:
   - `nilda_portrait.png`: Retrato 16-bit com óculos, cabelo ondulado, sorriso caloroso, blazer amarelo e mãos no peito (baseado na foto real).
   - `nilda_idle.png`: Sprite parado em pose carismática.
-  - `nilda_walk_0.png` a `nilda_walk_2.png`: Ciclo de caminhada de fiscalização das obras.
+  - `assets/movimento_nilda_v2/nilda_andando_01_v2.png` a `nilda_andando_06_v2.png`: Ciclo de caminhada com alternância real das pernas.
+  - `assets/movimento_nilda_v2/nilda_saltando_01_v2.png` a `nilda_saltando_05_v2.png`: Preparação, subida, ápice, queda e aterrissagem.
   - `nilda_jump.png`: Salto ágil para alcançar plataformas e andaimes.
   - `nilda_win.png`: Comemoração no palanque oficial.
 - **Cenário de Parnamirim**:

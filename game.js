@@ -1,5 +1,5 @@
 /**
- * GAME NILDA - AS OBRAS DE PARNAMIRIM (EDIÇÃO SUPER MARIO MULTIPLATAFORMA)
+ * GAME NILDA - AS OBRAS DE PARNAMIRIM (EDIÇÃO 16-BIT)
  * Protagonista: Prefeita Professora Nilda
  * Gestão Municipal de Parnamirim / RN
  * 
@@ -11,8 +11,8 @@
  * Correções Críticas:
  * - Fim de qualquer área de aprisionamento: chão livre sob as plataformas, sem paredes fechadas
  * - Plataformas em alturas variadas (rotas altas em sacadas/andaimes e rotas baixas na avenida)
- * - Sistema de diálogos 100% acessível (proximidade, toque/clique no NPC, teclas E/Z/Espaço/W/Enter)
- * - Blocos interativos clássicos do Super Mario (Tijolos quebráveis, [?] com moedas e estrelas)
+ * - Sistema de diálogos 100% acessível (botão Falar, proximidade e teclas E/Z/Enter)
+ * - Blocos interativos com identidade própria de obras públicas (moedas e estrelas)
  */
 
 (() => {
@@ -24,29 +24,49 @@
 
   const V_WIDTH = 1280;
   const V_HEIGHT = 720;
+  // O mundo fica um pouco mais próximo para dar presença aos personagens,
+  // mantendo a interface em resolução nativa e sem perder a leitura do cenário.
+  const WORLD_ZOOM = 1.10;
+  const WORLD_VIEW_WIDTH = V_WIDTH / WORLD_ZOOM;
+  const WORLD_VIEW_HEIGHT = V_HEIGHT / WORLD_ZOOM;
+  // A câmera começa presa ao piso e sobe apenas quando a personagem alcança
+  // plataformas altas. O limite negativo mantém a área de jogo abaixo do HUD.
+  const CAMERA_MIN_Y = -320;
+  const CAMERA_FOLLOW_Y = Math.round(WORLD_VIEW_HEIGHT * 0.367);
   const LEVEL_LENGTH = 9600;
   const GROUND_Y = 580;
 
-  // Física de Plataforma SNES / Mario (Ajustado: Pulo mais alto e caminhada mais cadenciada)
+  // Física de plataforma 16-bit: salto legível mesmo com o novo porte dos sprites.
   const GRAVITY = 1600;
   const MOVE_SPEED = 285;
   const ACCEL = 1750;
   const FRICTION = 0.82;
-  const JUMP_FORCE = -730;
+  const JUMP_FORCE = -770;
   const JUMP_CUT_MULT = 0.45;
   const MAX_FALL_SPEED = 850;
 
   // Lista Completa de Assets
   const assetPaths = {
-    nilda_idle: "assets/player/nilda_idle.png",
-    nilda_walk_0: "assets/player/nilda_walk_0.png",
-    nilda_walk_1: "assets/player/nilda_walk_1.png",
-    nilda_walk_2: "assets/player/nilda_walk_2.png",
-    nilda_jump: "assets/player/nilda_jump.png",
-    nilda_win: "assets/player/nilda_win.png",
+    // Sprites SNES novos, derivados das fotos de referência da Prefeita Nilda.
+    nilda_idle: "assets/player/nilda_snes_idle.png",
+    // Ciclo v4: apoio, passagem e troca clara entre perna direita e esquerda.
+    nilda_walk_0: "assets/movimento_nilda_v4/nilda_andando_01.png?v=2.7",
+    nilda_walk_1: "assets/movimento_nilda_v4/nilda_andando_02.png?v=2.7",
+    nilda_walk_2: "assets/movimento_nilda_v4/nilda_andando_03.png?v=2.7",
+    nilda_walk_3: "assets/movimento_nilda_v4/nilda_andando_04.png?v=2.7",
+    nilda_walk_4: "assets/movimento_nilda_v4/nilda_andando_05.png?v=2.7",
+    nilda_walk_5: "assets/movimento_nilda_v4/nilda_andando_06.png?v=2.7",
+    nilda_jump: "assets/player/nilda_snes_jump.png",
+    nilda_jump_0: "assets/movimento_nilda_v2/nilda_saltando_01_v2.png",
+    nilda_jump_1: "assets/movimento_nilda_v2/nilda_saltando_02_v2.png",
+    nilda_jump_2: "assets/movimento_nilda_v2/nilda_saltando_03_v2.png",
+    nilda_jump_3: "assets/movimento_nilda_v2/nilda_saltando_04_v2.png",
+    nilda_jump_4: "assets/movimento_nilda_v2/nilda_saltando_05_v2.png",
+    nilda_win: "assets/player/nilda_snes_win.png",
     
     bg_panorama: "assets/scenery/parnamirim_centro_obras.png",
-    ui_logo: "assets/ui/game_nilda_logo.png",
+    // Logo exclusiva da tela inicial, sem o mascote de caju.
+    ui_logo: "assets/ui/game_nilda_logo_sem_caju.png?v=2.8",
     ui_muni: "assets/ui/parnamirim_logo.png",
 
     block_brick: "assets/scenery/block_brick.png",
@@ -84,28 +104,45 @@
     stage_medico: "assets/stage_npcs/stage_medico.png",
     stage_engenheiro: "assets/stage_npcs/stage_engenheiro.png",
     stage_guarda: "assets/stage_npcs/stage_guarda.png",
+    stage_moradora_snes: "assets/stage_npcs/stage_moradora_snes.png",
+    stage_aluna_snes: "assets/stage_npcs/stage_aluna_snes.png",
+    stage_mae_cmei_snes: "assets/stage_npcs/stage_mae_cmei_snes.png",
+    stage_comerciante_snes: "assets/stage_npcs/stage_comerciante_snes.png",
     stage_cajulim: "assets/items/cajulim_npc.png"
   };
 
   const images = {};
   let assetsLoaded = 0;
-  const totalAssets = Object.keys(assetPaths).length;
+  // O retrato grande do Cajulim só aparece no diálogo final. Deixá-lo fora
+  // do primeiro lote reduz a espera percebida em celulares mais lentos.
+  const deferredAssetKeys = new Set(["portrait_cajulim"]);
+  const totalAssets = Object.keys(assetPaths).filter((key) => !deferredAssetKeys.has(key)).length;
+
+  function loadImageAsset(key, src, onDone) {
+    const img = new Image();
+    img.onload = () => onDone && onDone(true);
+    img.onerror = () => {
+      console.warn("Aviso ao carregar:", src);
+      onDone && onDone(false);
+    };
+    img.src = src;
+    images[key] = img;
+    return img;
+  }
 
   function loadAssets(onComplete) {
     for (const [key, src] of Object.entries(assetPaths)) {
-      const img = new Image();
-      img.onload = () => {
+      if (deferredAssetKeys.has(key)) continue;
+      loadImageAsset(key, src, () => {
         assetsLoaded++;
         if (assetsLoaded === totalAssets) onComplete();
-      };
-      img.onerror = () => {
-        console.warn("Aviso ao carregar:", src);
-        assetsLoaded++;
-        if (assetsLoaded === totalAssets) onComplete();
-      };
-      img.src = src;
-      images[key] = img;
+      });
     }
+  }
+
+  function ensureAsset(key) {
+    if (!images[key] && assetPaths[key]) loadImageAsset(key, assetPaths[key]);
+    return images[key];
   }
 
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -130,18 +167,22 @@
       // Câmera
       this.camera = { x: 0, y: 0 };
 
-      // Jogadora: Prefeita Nilda (ampliada em 10% para maior destaque)
+      // A arte preserva a proporção 2:3 dos sprites SNES (88 x 132).
+      // A colisão usa uma caixa menor e centralizada nos pés.
       this.player = {
         x: 120,
-        y: 474,
+        y: GROUND_Y - 132,
         vx: 0,
         vy: 0,
-        w: 57,
-        h: 106,
+        w: 88,
+        h: 132,
+        hitW: 50,
+        hitH: 96,
         grounded: true,
         facing: 1,
         animTimer: 0,
         walkFrame: 0,
+        jumpFrame: 0,
         coyoteTimer: 0,
         jumpBufferTimer: 0,
         isJumping: false
@@ -196,7 +237,7 @@
         if (params.get("x")) {
           this.startGame();
           this.player.x = parseFloat(params.get("x"));
-          this.camera.x = Math.max(0, this.player.x - V_WIDTH * 0.38);
+          this.camera.x = Math.max(0, this.player.x - WORLD_VIEW_WIDTH * 0.38);
         }
         if (params.get("dialogue") === "1" || params.get("npc") === "pai") {
           this.startGame();
@@ -206,7 +247,7 @@
         } else if (params.get("npc") === "gari") {
           this.startGame();
           this.player.x = 1950;
-          this.camera.x = Math.max(0, this.player.x - V_WIDTH * 0.38);
+          this.camera.x = Math.max(0, this.player.x - WORLD_VIEW_WIDTH * 0.38);
           const npc = this.npcs[2];
           this.startDialogue(npc.name, npc.portraitKey, npc.dialogue);
         }
@@ -252,7 +293,7 @@
             name: "Dona Socorro (Moradora de Monte Castelo)",
             badgeName: "Dona Socorro",
             portraitKey: "portrait_moradora",
-            stageSprite: "stage_gari",
+            stageSprite: "stage_moradora_snes",
             offsetRelX: 190,
             w: 45, h: 110,
             dialogue: [
@@ -332,7 +373,7 @@
             name: "Sofia (Aluna da Escola Nestor Lima)",
             badgeName: "Aluna Sofia",
             portraitKey: "portrait_aluna",
-            stageSprite: "stage_professora",
+            stageSprite: "stage_aluna_snes",
             offsetRelX: 190,
             w: 52, h: 105,
             dialogue: [
@@ -372,7 +413,7 @@
             name: "Dona Lúcia (Mãe de Aluno do CMEI)",
             badgeName: "Dona Lúcia",
             portraitKey: "portrait_mae_cmei",
-            stageSprite: "stage_pai_aluno",
+            stageSprite: "stage_mae_cmei_snes",
             offsetRelX: 180,
             w: 62, h: 110,
             dialogue: [
@@ -412,7 +453,7 @@
             name: "Seu Pedro (Comerciante do Centro)",
             badgeName: "Seu Pedro",
             portraitKey: "portrait_comerciante",
-            stageSprite: "stage_pai_aluno",
+            stageSprite: "stage_comerciante_snes",
             offsetRelX: 180,
             w: 62, h: 110,
             dialogue: [
@@ -468,8 +509,8 @@
         this.items.push({
           x: proj.x + 40,
           y: proj.y - 75,
-          w: 56,
-          h: 56,
+          w: 64,
+          h: 64,
           itemKey: proj.itemKey,
           title: proj.title,
           pts: proj.pts,
@@ -477,10 +518,15 @@
           collected: false
         });
 
-        // NPC no topo da plataforma (ampliado em 10% proporcionalmente com a Nilda)
+        // NPC no topo da plataforma. A altura cresce, mas a largura vem da
+        // proporção real de cada arquivo para evitar personagens espremidos.
         if (proj.npc) {
-          const npcW = Math.round(proj.npc.w * 1.10);
-          const npcH = Math.round(proj.npc.h * 1.10);
+          const npcH = Math.round(proj.npc.h * 1.20);
+          const npcImg = images[proj.npc.stageSprite];
+          const nativeRatio = npcImg && npcImg.naturalHeight > 0
+            ? npcImg.naturalWidth / npcImg.naturalHeight
+            : (proj.npc.w / proj.npc.h);
+          const npcW = Math.max(42, Math.round(npcH * nativeRatio));
           this.npcs.push({
             x: proj.x + proj.npc.offsetRelX,
             y: proj.y - npcH,
@@ -497,55 +543,7 @@
         }
       }
 
-      // 3. PLATAFORMAS AUXILIARES / TETO DE PRÉDIOS / ROTAS SUPERIORES
-      // Criam verticalidade real e pontes entre áreas
-      const subPlatforms = [
-        // Rota superior Monte Castelo (passarelas de acesso)
-        { x: 1040, y: 460, w: 90, h: 28, title: "Acesso" },
-        { x: 1580, y: 450, w: 100, h: 28, title: "Descida" },
-
-        // Rota superior Escola / Biblioteca
-        { x: 2500, y: 360, w: 110, h: 28, title: "Teto Sala" },
-        { x: 2380, y: 470, w: 80, h: 28, title: "Jardim" },
-        { x: 3050, y: 350, w: 100, h: 28, title: "Descida" },
-
-        // Rota superior UBS
-        { x: 3580, y: 220, w: 150, h: 28, title: "Heliponto" },
-
-        // Rota superior Fardamento
-        { x: 4300, y: 260, w: 180, h: 28, title: "Passarela" },
-
-        // Rota superior Olavo Montenegro
-        { x: 4820, y: 390, w: 120, h: 28, title: "Galeria" },
-        { x: 4700, y: 490, w: 80, h: 28, title: "Base" },
-        { x: 5400, y: 380, w: 120, h: 28, title: "Descida" },
-
-        // Rota superior CMEI
-        { x: 5940, y: 210, w: 150, h: 28, title: "Ar-Cond." },
-
-        // Rota superior LED
-        { x: 6420, y: 460, w: 90, h: 28, title: "Base LED" },
-        { x: 6500, y: 350, w: 90, h: 28, title: "Poste" },
-        { x: 6970, y: 370, w: 100, h: 28, title: "Descida" },
-
-        // Rota superior Eco-Deck
-        { x: 8040, y: 440, w: 90, h: 28, title: "Subida" },
-        { x: 8110, y: 370, w: 80, h: 28, title: "Escada" }
-      ];
-
-      for (const sp of subPlatforms) {
-        this.platforms.push({
-          x: sp.x,
-          y: sp.y,
-          w: sp.w,
-          h: sp.h,
-          isGround: false,
-          isSub: true,
-          title: sp.title
-        });
-      }
-
-      // 4. BLOCOS CLÁSSICOS DO MARIO & ESCADARIAS AO AR LIVRE (SEM ENCLAVE/PAREDE PRESA)
+      // 3. BLOCOS INTERATIVOS E ESCADARIAS ABERTAS (SEM PAREDES PRESAS)
       this.blocks = [];
 
       // Escadarias abertas que sobem e descem livremente no ar aberto (SEM TETO)
@@ -593,21 +591,43 @@
         }
       };
 
-      // Pirâmides de blocos em áreas ABERTAS entre as plataformas (diversão pura de saltos):
+      // Cinco marcos de subida dão ritmo sem transformar a fase em um labirinto
+      // de tijolos. As demais áreas ficam livres para o jogador ler o cenário.
       addOpenStairPyramid(360, GROUND_Y, 2);   // Entrada do Cartão Educa
       addOpenStairPyramid(940, GROUND_Y, 2);   // Entre Zona 1 e 2
-      addOpenStairPyramid(1720, GROUND_Y, 2);  // Antes da Zona 3 (Garis)
       addOpenStairPyramid(2440, GROUND_Y, 2);  // Antes da Escola
-      addOpenStairPyramid(3220, GROUND_Y, 2);  // Antes da UBS
-      addOpenStairPyramid(4000, GROUND_Y, 2);  // Antes do Fardamento
       addOpenStairPyramid(4740, GROUND_Y, 2);  // Antes da Olavo Montenegro
-      addOpenStairPyramid(5540, GROUND_Y, 2);  // Antes do CMEI
-      addOpenStairPyramid(6320, GROUND_Y, 2);  // Antes do LED
-      addOpenStairPyramid(7120, GROUND_Y, 2);  // Antes do Asfalto Novo
       addOpenStairPyramid(7920, GROUND_Y, 2);  // Antes do Cajulim
 
+      // Rotas de acesso contínuas para que cada plataforma alta seja alcançável.
+      // O degrau de 48 px cabe no salto atual e evita que a jogadora fique presa
+      // olhando para uma plataforma sem uma rota segura de subida.
+      const addReachableRamp = (proj) => {
+        if (proj.isFinal || proj.y >= GROUND_Y - 120) return;
+        const stepW = 48;
+        const stepH = 48;
+        const steps = Math.ceil((GROUND_Y - proj.y) / stepH);
+        const startX = proj.x - (steps - 1) * stepW;
+        for (let s = 0; s < steps; s++) {
+          this.blocks.push({
+            x: startX + s * stepW,
+            y: GROUND_Y - (s + 1) * stepH,
+            w: stepW,
+            h: stepH,
+            type: 'brick',
+            breakable: false,
+            accessRamp: true
+          });
+        }
+      };
+      // Plataformas que ficam acima do piso recebem uma rota elevada. As mais
+      // baixas continuam fáceis de alcançar e não ganham uma escada adicional.
+      for (const proj of projectData) {
+        if (proj.y <= 450) addReachableRamp(proj);
+      }
+
       // GRANDE PIRÂMIDE DE VITÓRIA NO FINAL (x: 8840 a 9020)
-      const finalSteps = 4;
+      const finalSteps = 3;
       for (let s = 0; s < finalSteps; s++) {
         const colX = 8840 + s * 48;
         for (let h = 0; h <= s; h++) {
@@ -622,41 +642,41 @@
         }
       }
 
-      // Fileiras de Blocos Aéreos Super Mario: [Tijolo] [?] [Tijolo] [?] [Tijolo]
-      const marioBlockRows = [
-        { x: 560, y: 240, type: 'question', content: 'star' },
-        { x: 608, y: 240, type: 'brick', breakable: true },
-        { x: 656, y: 240, type: 'question', content: 'coin' },
+      // Fileiras de blocos aéreos com linguagem de obra pública.
+      const challengeBlockRows = [
+        { x: 560, y: 210, type: 'question', content: 'star' },
+        { x: 608, y: 210, type: 'brick', breakable: true },
+        { x: 656, y: 210, type: 'question', content: 'coin' },
 
-        { x: 1300, y: 190, type: 'recycle', content: 'star' },
-        { x: 1348, y: 190, type: 'question', content: 'coin' },
+        { x: 1300, y: 130, type: 'recycle', content: 'star' },
+        { x: 1348, y: 130, type: 'question', content: 'coin' },
 
-        { x: 2020, y: 290, type: 'question', content: 'coin' },
-        { x: 2068, y: 290, type: 'recycle', content: 'coin' },
-        { x: 2116, y: 290, type: 'question', content: 'star' },
+        { x: 2020, y: 260, type: 'question', content: 'coin' },
+        { x: 2068, y: 260, type: 'recycle', content: 'coin' },
+        { x: 2116, y: 260, type: 'question', content: 'star' },
 
-        { x: 2800, y: 130, type: 'question', content: 'star' },
-        { x: 2848, y: 130, type: 'brick', breakable: true },
+        { x: 2800, y: 40, type: 'question', content: 'star' },
+        { x: 2848, y: 40, type: 'brick', breakable: true },
 
-        { x: 3600, y: 130, type: 'question', content: 'star' },
-        { x: 3648, y: 130, type: 'brick', breakable: true },
+        { x: 3600, y: 200, type: 'question', content: 'star' },
+        { x: 3648, y: 200, type: 'brick', breakable: true },
 
-        { x: 4360, y: 170, type: 'question', content: 'coin' },
-        { x: 4408, y: 170, type: 'question', content: 'star' },
+        { x: 4360, y: 280, type: 'question', content: 'coin' },
+        { x: 4408, y: 280, type: 'question', content: 'star' },
 
-        { x: 5140, y: 150, type: 'recycle', content: 'star' },
-        { x: 5188, y: 150, type: 'question', content: 'coin' },
+        { x: 5140, y: 60, type: 'recycle', content: 'star' },
+        { x: 5188, y: 60, type: 'question', content: 'coin' },
 
-        { x: 5960, y: 130, type: 'question', content: 'star' },
+        { x: 5960, y: 190, type: 'question', content: 'star' },
 
-        { x: 6720, y: 140, type: 'question', content: 'star' },
-        { x: 6768, y: 140, type: 'brick', breakable: true },
+        { x: 6720, y: 50, type: 'question', content: 'star' },
+        { x: 6768, y: 50, type: 'brick', breakable: true },
 
-        { x: 7520, y: 300, type: 'question', content: 'coin' },
-        { x: 7568, y: 300, type: 'brick', breakable: true },
+        { x: 7520, y: 270, type: 'question', content: 'coin' },
+        { x: 7568, y: 270, type: 'brick', breakable: true },
 
-        { x: 8300, y: 210, type: 'recycle', content: 'star' },
-        { x: 8348, y: 210, type: 'question', content: 'coin' },
+        { x: 8300, y: 120, type: 'recycle', content: 'star' },
+        { x: 8348, y: 120, type: 'question', content: 'coin' },
 
         // Blocos quebráveis no chão (1 tijolo de altura apenas, pulável e destrutível):
         { x: 860, y: GROUND_Y - 48, type: 'brick', breakable: true },
@@ -671,7 +691,7 @@
         { x: 7840, y: GROUND_Y - 48, type: 'brick', breakable: true }
       ];
 
-      for (const b of marioBlockRows) {
+      for (const b of challengeBlockRows) {
         this.blocks.push({
           x: b.x,
           y: b.y,
@@ -703,7 +723,8 @@
       // 1. Teclado PC
       window.addEventListener("keydown", (e) => {
         if (this.dialogue.active) {
-          if (e.code === "Space" || e.code === "Enter" || e.code === "KeyZ" || e.code === "KeyE") {
+          // Espaço é reservado ao pulo; Enter, E e Z avançam a conversa no teclado.
+          if (e.code === "Enter" || e.code === "KeyZ" || e.code === "KeyE") {
             this.advanceDialogue();
           }
           return;
@@ -729,11 +750,6 @@
             this.player.jumpBufferTimer = 0.16;
           }
           this.keys.jumpHeld = true;
-
-          // Se estiver perto de um NPC, pular ou apertar para cima também inicia a conversa
-          if (this.activePromptNpc && !this.dialogue.active) {
-            this.checkInteractions();
-          }
         }
 
         if (e.code === "KeyE" || e.code === "KeyZ") {
@@ -786,16 +802,8 @@
         const clickX = (e.clientX - rect.left) * scaleX + this.camera.x;
         const clickY = (e.clientY - rect.top) * scaleY;
 
-        // Se tocou em qualquer NPC, abre o diálogo imediatamente
-        for (const npc of this.npcs) {
-          if (clickX >= npc.x - 40 && clickX <= npc.x + npc.w + 40 &&
-              clickY >= npc.y - 50 && clickY <= npc.y + npc.h + 30) {
-            this.triggerNpcDialogue(npc);
-            return;
-          }
-        }
-
-        // Se tocou perto da jogadora e está perto de alguém, fala
+        // Clique no canvas ainda funciona como atalho no PC quando a jogadora
+        // está próxima; no celular, o botão FALAR é a ação explícita.
         if (this.activePromptNpc) {
           this.checkInteractions();
         }
@@ -828,7 +836,7 @@
       bindTouchBtn("btnLandLeft", () => { this.keys.left = true; }, () => { this.keys.left = false; });
       bindTouchBtn("btnLandRight", () => { this.keys.right = true; }, () => { this.keys.right = false; });
       bindTouchBtn("btnLandJump", () => {
-        if (this.dialogue.active) { this.advanceDialogue(); return; }
+        if (this.dialogue.active) return;
         if (!this.keys.jumpHeld) { this.keys.jump = true; this.player.jumpBufferTimer = 0.16; }
         this.keys.jumpHeld = true;
       }, () => { this.keys.jumpHeld = false; });
@@ -837,14 +845,12 @@
       // Controles Retrato (Em Pé / Gamepad Portátil)
       bindTouchBtn("btnPortLeft", () => { this.keys.left = true; }, () => { this.keys.left = false; });
       bindTouchBtn("btnPortRight", () => { this.keys.right = true; }, () => { this.keys.right = false; });
-      bindTouchBtn("btnPortUp", () => {
-        if (!this.keys.jumpHeld) { this.keys.jump = true; this.player.jumpBufferTimer = 0.16; }
-        this.keys.jumpHeld = true;
-      }, () => { this.keys.jumpHeld = false; });
+      // O salto fica somente no botão A; o direcional não dispara conversa nem salto.
+      bindTouchBtn("btnPortUp", () => {}, () => {});
       bindTouchBtn("btnPortDown", () => { this.keys.down = true; }, () => { this.keys.down = false; });
 
       bindTouchBtn("btnPortJump", () => {
-        if (this.dialogue.active) { this.advanceDialogue(); return; }
+        if (this.dialogue.active) return;
         if (!this.keys.jumpHeld) { this.keys.jump = true; this.player.jumpBufferTimer = 0.16; }
         this.keys.jumpHeld = true;
       }, () => { this.keys.jumpHeld = false; });
@@ -889,16 +895,19 @@
     }
 
     restartGame() {
+      if (window.soundManager) window.soundManager.stopDialogueVoice();
       this.player.x = 120;
-      this.player.y = 474;
+      this.player.y = GROUND_Y - this.player.h;
       this.player.vx = 0;
       this.player.vy = 0;
+      this.player.jumpFrame = 0;
       this.score = 0;
       this.coins = 0;
       this.itemsCollected = 0;
       this.drenagensAtivas = 0;
       this.timeRemaining = 480;
       this.camera.x = 0;
+      this.camera.y = 0;
       this.activePromptNpc = null;
       this.initLevel();
       this.state = "PLAYING";
@@ -917,6 +926,13 @@
     }
 
     startDialogue(speaker, portraitKey, lines, onComplete) {
+      ensureAsset(portraitKey || "portrait_nilda");
+      // Voz/blips ficam limpos quando a fala começa; a música volta ao
+      // terminar a conversa para não competir com a leitura.
+      if (window.soundManager) {
+        window.soundManager.stopBgm();
+        window.soundManager.stopDialogueVoice();
+      }
       this.dialogue.active = true;
       this.dialogue.speaker = speaker;
       this.dialogue.portraitKey = portraitKey || "portrait_nilda";
@@ -927,7 +943,10 @@
       this.dialogue.onComplete = onComplete || null;
       this.state = "DIALOGUE";
       this.player.vx = 0;
-      if (window.soundManager) window.soundManager.playBlip();
+      if (window.soundManager) {
+        const voiced = window.soundManager.playDialogueLine(this.dialogue.portraitKey, 0);
+        if (!voiced) window.soundManager.playBlip();
+      }
     }
 
     advanceDialogue() {
@@ -939,13 +958,21 @@
 
       this.dialogue.currentLine++;
       if (this.dialogue.currentLine >= this.dialogue.lines.length) {
+        if (window.soundManager) window.soundManager.stopDialogueVoice();
         this.dialogue.active = false;
         this.state = "PLAYING";
         if (this.dialogue.onComplete) this.dialogue.onComplete();
+        if (window.soundManager && this.state === "PLAYING") window.soundManager.startBgm();
       } else {
         this.dialogue.charIndex = 0;
         this.dialogue.charTimer = 0;
-        if (window.soundManager) window.soundManager.playBlip();
+        if (window.soundManager) {
+          const voiced = window.soundManager.playDialogueLine(
+            this.dialogue.portraitKey,
+            this.dialogue.currentLine
+          );
+          if (!voiced) window.soundManager.playBlip();
+        }
       }
     }
 
@@ -963,7 +990,8 @@
 
       // 2. Interação com Válvulas de Drenagem
       const p = this.player;
-      const interactBox = { x: p.x - 40, y: p.y - 30, w: p.w + 80, h: p.h + 50 };
+      const hit = this.playerHitbox(p);
+      const interactBox = { x: hit.x - 40, y: hit.y - 30, w: hit.w + 80, h: hit.h + 50 };
 
       for (let i = 0; i < this.drainValves.length; i++) {
         const v = this.drainValves[i];
@@ -989,6 +1017,17 @@
         r1.y < r2.y + r2.h &&
         r1.y + r1.h > r2.y
       );
+    }
+
+    playerHitbox(p = this.player) {
+      const hitW = p.hitW || p.w;
+      const hitH = p.hitH || p.h;
+      return {
+        x: p.x + (p.w - hitW) / 2,
+        y: p.y + p.h - hitH,
+        w: hitW,
+        h: hitH
+      };
     }
 
     spawnSparkles(x, y, count = 12) {
@@ -1121,12 +1160,15 @@
         p.vx += moveDir * ACCEL * dt;
         p.vx = clamp(p.vx, -MOVE_SPEED, MOVE_SPEED);
         p.facing = moveDir;
-        p.animTimer += dt * 14;
-        p.walkFrame = Math.floor(p.animTimer) % 3;
+        p.animTimer += dt * 9;
+        p.walkFrame = Math.floor(p.animTimer) % 6;
       } else {
         p.vx *= Math.pow(FRICTION, dt * 60);
         if (Math.abs(p.vx) < 5) p.vx = 0;
-        p.walkFrame = 0;
+        if (Math.abs(p.vx) <= 20) {
+          p.animTimer = 0;
+          p.walkFrame = 0;
+        }
       }
 
       // 2. Coyote Time e Pulo
@@ -1143,6 +1185,7 @@
         p.coyoteTimer = 0;
         p.jumpBufferTimer = 0;
         p.isJumping = true;
+        p.jumpFrame = 0;
         if (window.soundManager) window.soundManager.playJump();
       }
 
@@ -1159,9 +1202,10 @@
       p.x = clamp(p.x, 20, LEVEL_LENGTH - p.w - 40);
 
       // 4. Movimento Vertical e Colisões
+      const previousY = p.y;
       p.y += p.vy * dt;
       p.grounded = false;
-      this.resolveMapCollisionsY(p, dt);
+      this.resolveMapCollisionsY(p, dt, previousY);
 
       if (p.grounded) {
         p.isJumping = false;
@@ -1180,61 +1224,59 @@
         }
       }
 
-      // 6. DETECÇÃO DE PROXIMIDADE GENEROSA PARA DIÁLOGOS
+      // 6. Detecção de proximidade com tolerância horizontal confortável,
+      // mas sem ativar um NPC que esteja em outro andar distante.
       let foundNearNpc = null;
       for (const npc of this.npcs) {
         const dx = Math.abs((p.x + p.w / 2) - (npc.x + npc.w / 2));
         // Permite falar tanto no mesmo nível quanto olhando de baixo da plataforma
         const dy = Math.abs((p.y + p.h) - (npc.y + npc.h));
-        if (dx < 105 && dy < 250) {
+        if (dx < 118 && dy < 150) {
           foundNearNpc = npc;
           break;
         }
       }
       this.activePromptNpc = foundNearNpc;
 
-      // Inicia conversa automaticamente se encostar no cidadão pela primeira vez
-      if (foundNearNpc && !foundNearNpc.talked) {
-        const directDist = Math.hypot(p.x - foundNearNpc.x, p.y - foundNearNpc.y);
-        if (directDist < 75) {
-          this.triggerNpcDialogue(foundNearNpc);
-        }
-      }
-
-      // 7. Câmera SNES
-      const targetCamX = p.x - V_WIDTH * 0.38;
-      this.camera.x = lerp(this.camera.x, clamp(targetCamX, 0, LEVEL_LENGTH - V_WIDTH), 0.12);
+      // 7. Câmera SNES: acompanha a subida sem deixar a Nilda atrás do HUD.
+      const targetCamX = p.x - WORLD_VIEW_WIDTH * 0.38;
+      this.camera.x = lerp(this.camera.x, clamp(targetCamX, 0, LEVEL_LENGTH - WORLD_VIEW_WIDTH), 0.12);
+      const targetCamY = p.y + p.h / 2 - CAMERA_FOLLOW_Y;
+      this.camera.y = lerp(this.camera.y, clamp(targetCamY, CAMERA_MIN_Y, 0), 0.18);
 
       this.updateParticles(dt);
     }
 
     resolveMapCollisionsX(p) {
       for (const b of this.blocks) {
-        if (this.checkAABB(p, b)) {
+        const hit = this.playerHitbox(p);
+        if (this.checkAABB(hit, b)) {
+          const hitOffsetX = (p.w - hit.w) / 2;
           if (p.vx > 0) {
-            p.x = b.x - p.w;
+            p.x = b.x - hit.w - hitOffsetX;
             p.vx = 0;
           } else if (p.vx < 0) {
-            p.x = b.x + b.w;
+            p.x = b.x + b.w - hitOffsetX;
             p.vx = 0;
           }
         }
       }
     }
 
-    resolveMapCollisionsY(p, dt = 0.016) {
+    resolveMapCollisionsY(p, dt = 0.016, previousY = p.y) {
       // 1. Colisão com Plataformas Suspensas e Chão
       for (const plat of this.platforms) {
-        if (p.x + p.w * 0.8 > plat.x && p.x + p.w * 0.2 < plat.x + plat.w) {
+        const hit = this.playerHitbox(p);
+        if (hit.x + hit.w * 0.9 > plat.x && hit.x + hit.w * 0.1 < plat.x + plat.w) {
           if (plat.isGround) {
-            if (p.y + p.h >= plat.y) {
+            if (hit.y + hit.h >= plat.y) {
               p.y = plat.y - p.h;
               p.vy = 0;
               p.grounded = true;
             }
           } else {
             // Plataforma semi-sólida (atravessa pulando por baixo)
-            if (p.vy >= 0 && (p.y + p.h) >= plat.y && (p.y + p.h) <= plat.y + 26) {
+            if (p.vy >= 0 && (hit.y + hit.h) >= plat.y && (hit.y + hit.h) <= plat.y + 26) {
               p.y = plat.y - p.h;
               p.vy = 0;
               p.grounded = true;
@@ -1243,18 +1285,29 @@
         }
       }
 
-      // 2. Colisão com Blocos Super Mario
+      // 2. Colisão com blocos de desafio
       for (const b of this.blocks) {
-        if (this.checkAABB(p, b)) {
-          if (p.vy >= 0 && (p.y + p.h - p.vy * dt) <= b.y + 8) {
-            p.y = b.y - p.h;
-            p.vy = 0;
-            p.grounded = true;
-          } else if (p.vy < 0 && p.y >= b.y + b.h - 22) {
-            p.y = b.y + b.h;
-            p.vy = 30;
-            this.hitBlock(b);
-          }
+        const hit = this.playerHitbox(p);
+        const overlapsX = hit.x < b.x + b.w && hit.x + hit.w > b.x;
+        if (!overlapsX) continue;
+
+        const previousFeet = previousY + p.h;
+        const currentFeet = p.y + p.h;
+        const blockBottom = b.y + b.h;
+        const crossedBlockTop = p.vy >= 0 && previousFeet <= b.y + 8 && currentFeet >= b.y;
+        const crossedBlockBottom = p.vy < 0 && previousY >= blockBottom - 6 && p.y <= blockBottom;
+
+        if (crossedBlockTop) {
+          p.y = b.y - p.h;
+          p.vy = 0;
+          p.grounded = true;
+        } else if (crossedBlockBottom) {
+          // Encosta o topo visual da Nilda na parte inferior do bloco. A
+          // lógica anterior subtraía a altura inteira e teleportava o corpo
+          // para dentro/acima do tijolo.
+          p.y = blockBottom;
+          p.vy = 30;
+          this.hitBlock(b);
         }
       }
     }
@@ -1303,8 +1356,9 @@
 
     updateItems(dt) {
       const p = this.player;
+      const hit = this.playerHitbox(p);
       for (const item of this.items) {
-        if (!item.collected && this.checkAABB(p, item)) {
+        if (!item.collected && this.checkAABB(hit, item)) {
           item.collected = true;
           this.itemsCollected++;
           this.score += item.pts;
@@ -1329,7 +1383,11 @@
         if (this.dialogue.charTimer >= 0.025) {
           this.dialogue.charTimer = 0;
           this.dialogue.charIndex++;
-          if (this.dialogue.charIndex % 3 === 0 && window.soundManager) {
+          const hasVoice = window.soundManager && window.soundManager.hasDialogueVoice(
+            this.dialogue.portraitKey,
+            this.dialogue.currentLine
+          );
+          if (this.dialogue.charIndex % 3 === 0 && window.soundManager && !hasVoice) {
             window.soundManager.playBlip();
           }
         }
@@ -1410,26 +1468,35 @@
       }
 
       const camX = this.camera.x;
+      const camY = this.camera.y;
 
-      // 1. Cenário de Fundo (Parallax SNES de Parnamirim)
+      // 1. Cenário de Fundo (Parallax 16-bit de Parnamirim)
+      // O zoom gira em torno do piso para que os pés permaneçam estáveis.
+      ctx.save();
+      ctx.translate(0, GROUND_Y);
+      ctx.scale(WORLD_ZOOM, WORLD_ZOOM);
+      ctx.translate(0, -GROUND_Y);
       const bg = images.bg_panorama;
       if (bg && bg.complete && bg.naturalWidth > 0) {
         const bgParallaxX = -(camX * 0.3) % bg.naturalWidth;
         ctx.drawImage(bg, bgParallaxX, 0, bg.naturalWidth, V_HEIGHT);
-        if (bgParallaxX + bg.naturalWidth < V_WIDTH) {
+        if (bgParallaxX + bg.naturalWidth < WORLD_VIEW_WIDTH) {
           ctx.drawImage(bg, bgParallaxX + bg.naturalWidth, 0, bg.naturalWidth, V_HEIGHT);
         }
       } else {
-        const grad = ctx.createLinearGradient(0, 0, 0, V_HEIGHT);
+        const grad = ctx.createLinearGradient(0, 0, 0, V_HEIGHT / WORLD_ZOOM);
         grad.addColorStop(0, "#38bdf8");
         grad.addColorStop(0.7, "#bae6fd");
         grad.addColorStop(1, "#f0fdf4");
         ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+        ctx.fillRect(0, 0, WORLD_VIEW_WIDTH, V_HEIGHT / WORLD_ZOOM);
       }
+      ctx.restore();
 
       ctx.save();
-      ctx.translate(-Math.round(camX), 0);
+      ctx.translate(0, GROUND_Y);
+      ctx.scale(WORLD_ZOOM, WORLD_ZOOM);
+      ctx.translate(-Math.round(camX), -GROUND_Y - Math.round(camY));
 
       // 2. Poças de Alagamento Crônico no Chão
       for (const puddle of this.mudPuddles) {
@@ -1437,13 +1504,13 @@
           ctx.fillStyle = "rgba(14, 116, 144, 0.85)";
           ctx.fillRect(puddle.x, puddle.y, puddle.w, puddle.h);
           ctx.fillStyle = "#38bdf8";
-          ctx.font = "bold 12px monospace";
+          ctx.font = "bold 14px monospace";
           ctx.fillText("⚠ " + puddle.name.toUpperCase(), puddle.x + 10, puddle.y - 8);
         } else {
           ctx.fillStyle = "rgba(71, 85, 105, 0.45)";
           ctx.fillRect(puddle.x, puddle.y + 6, puddle.w, 8);
           ctx.fillStyle = "#10b981";
-          ctx.font = "bold 11px monospace";
+          ctx.font = "bold 13px monospace";
           ctx.fillText("✔ DRENADO PELA PREFEITURA DE PARNAMIRIM", puddle.x + 8, puddle.y - 6);
         }
       }
@@ -1461,15 +1528,6 @@
           for (let fx = plat.x + 30; fx < plat.x + plat.w; fx += 90) {
             ctx.fillRect(fx, plat.y + 40, 45, 6);
           }
-        } else if (plat.isSub) {
-          // Plataforma auxiliar/teto mais estreita
-          ctx.fillStyle = "#334155";
-          ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
-          ctx.fillStyle = "#f5b700";
-          ctx.fillRect(plat.x, plat.y, plat.w, 4);
-          ctx.fillStyle = "#cbd5e1";
-          ctx.font = "bold 10px monospace";
-          ctx.fillText(plat.title, plat.x + 6, plat.y + 18);
         } else {
           // Plataforma Oficial de Obra Pública
           const px = plat.x;
@@ -1505,19 +1563,19 @@
 
           ctx.fillStyle = "#fef08a";
           ctx.textAlign = "center";
-          drawFittedText(ctx, "★ " + plat.title + " ★", px + pw / 2, labelY + labelH - 5, labelW - 10, 12);
+          drawFittedText(ctx, "★ " + plat.title + " ★", px + pw / 2, labelY + labelH - 5, labelW - 10, 14);
           ctx.textAlign = "left";
         }
       }
 
-      // 4. BLOCOS CLÁSSICOS DO SUPER MARIO
+      // 4. Blocos de desafio com identidade municipal
       const brickImg = images.block_brick;
       const questionImg = images.block_question;
       const recycleImg = images.block_recycle;
       const emptyImg = images.block_empty;
 
       for (const b of this.blocks) {
-        if (b.x + b.w < camX - 50 || b.x > camX + V_WIDTH + 50) continue;
+        if (b.x + b.w < camX - 50 || b.x > camX + WORLD_VIEW_WIDTH + 50) continue;
 
         const drawY = b.y + (b.bumpY || 0);
         let img = brickImg;
@@ -1591,7 +1649,7 @@
         ctx.stroke();
 
         ctx.fillStyle = "#ffffff";
-        ctx.font = "900 11px monospace";
+        ctx.font = "900 13px monospace";
         ctx.fillText(valve.active ? "ON" : "BOMBA", valve.x + 8, valve.y + 26);
 
         ctx.fillStyle = "#f8fafc";
@@ -1644,7 +1702,7 @@
 
         ctx.fillStyle = "#facc15";
         ctx.textAlign = "center";
-        drawFittedText(ctx, "! " + npc.badgeName, npc.x + npc.w / 2, badgeY + 15, badgeW - 8, 11);
+        drawFittedText(ctx, "! " + npc.badgeName, npc.x + npc.w / 2, badgeY + 15, badgeW - 8, 13);
         ctx.textAlign = "left";
 
         // BALÃO BRILHANTE INDICANDO "FALAR" QUANDO PERTO
@@ -1663,7 +1721,7 @@
           ctx.strokeRect(promptX, promptY + pulse, promptW, promptH);
 
           ctx.fillStyle = "#000000";
-          ctx.font = "900 11px monospace";
+          ctx.font = "900 13px monospace";
           ctx.textAlign = "center";
           ctx.fillText("💬 CONVERSAR (E)", promptX + promptW / 2, promptY + pulse + 17);
           ctx.textAlign = "left";
@@ -1687,9 +1745,12 @@
       if (this.state === "LEVEL_CLEAR") {
         pImg = images.nilda_win || images.nilda_idle;
       } else if (!p.grounded) {
-        pImg = images.nilda_jump || images.nilda_idle;
+        // Cinco poses dão preparação, subida, ápice, queda e aterrissagem.
+        const jumpProgress = clamp((p.vy - JUMP_FORCE) / (MAX_FALL_SPEED - JUMP_FORCE), 0, 1);
+        p.jumpFrame = Math.round(jumpProgress * 4);
+        pImg = images["nilda_jump_" + p.jumpFrame] || images.nilda_jump || images.nilda_idle;
       } else if (Math.abs(p.vx) > 20) {
-        const walkImgs = [images.nilda_walk_0, images.nilda_walk_1, images.nilda_walk_2];
+        const walkImgs = [images.nilda_walk_0, images.nilda_walk_1, images.nilda_walk_2, images.nilda_walk_3, images.nilda_walk_4, images.nilda_walk_5];
         pImg = walkImgs[p.walkFrame] || images.nilda_idle;
       }
 
@@ -1719,7 +1780,7 @@
       for (const ft of this.floatingTexts) {
         ctx.save();
         ctx.fillStyle = ft.color;
-        ctx.font = "900 13px 'Segoe UI', monospace";
+        ctx.font = "900 15px 'Segoe UI', monospace";
         ctx.globalAlpha = ft.life / ft.maxLife;
         ctx.fillText(ft.text, ft.x, ft.y);
         ctx.restore();
@@ -1731,7 +1792,7 @@
       if (this.state === "LEVEL_CLEAR") {
         for (const c of this.confetti) {
           ctx.save();
-          ctx.translate(c.x - camX, c.y);
+          ctx.translate((c.x - camX) * WORLD_ZOOM, GROUND_Y + (c.y - GROUND_Y - camY) * WORLD_ZOOM);
           ctx.rotate(c.rot);
           ctx.fillStyle = c.color;
           ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
@@ -1754,6 +1815,61 @@
     }
 
     renderHUD() {
+      const portraitMode = window.innerHeight > window.innerWidth;
+
+      // No modo retrato a câmera mostra apenas o centro do canvas. Um HUD
+      // compacto e centralizado mantém o objetivo legível sem perder a logo.
+      if (portraitMode) {
+        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.fillRect(400, 0, 480, 68);
+        ctx.fillStyle = "#f5b700";
+        ctx.fillRect(400, 66, 480, 3);
+
+        ctx.fillStyle = "#f8fafc";
+        ctx.font = "900 18px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("MISSÃO PARNAMIRIM", V_WIDTH / 2, 24);
+
+        ctx.fillStyle = "#6ee7b7";
+        ctx.font = "900 16px monospace";
+        ctx.fillText(`OBRAS ${this.itemsCollected}/${this.totalItems}   •   DRENAGENS ${this.drenagensAtivas}/${this.totalDrenagens}`, V_WIDTH / 2, 47);
+
+        ctx.fillStyle = this.timeRemaining < 60 ? "#ef4444" : "#fef08a";
+        ctx.font = "900 15px monospace";
+        ctx.fillText(`TEMPO ${Math.floor(this.timeRemaining / 60)}:${String(Math.floor(this.timeRemaining % 60)).padStart(2, "0")}   •   PTS ${String(this.score).padStart(6, "0")}`, V_WIDTH / 2, 64);
+        ctx.textAlign = "left";
+        return;
+      }
+
+      const compactLandscape = window.innerWidth < 1000 && window.innerWidth > window.innerHeight;
+      if (compactLandscape) {
+        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+        ctx.fillRect(0, 0, V_WIDTH, 68);
+        ctx.fillStyle = "#f5b700";
+        ctx.fillRect(0, 66, V_WIDTH, 3);
+
+        const logo = images.ui_muni;
+        if (logo && logo.complete && logo.naturalWidth > 0) {
+          ctx.drawImage(logo, 18, 7, 120, 42);
+        }
+        ctx.fillStyle = "#f8fafc";
+        ctx.font = "900 19px 'Segoe UI', sans-serif";
+        ctx.fillText("MISSÃO PARNAMIRIM", 158, 28);
+        ctx.fillStyle = "#6ee7b7";
+        ctx.font = "900 15px monospace";
+        ctx.fillText(`OBRAS ${this.itemsCollected}/${this.totalItems}  •  DRENAGENS ${this.drenagensAtivas}/${this.totalDrenagens}`, 158, 51);
+
+        ctx.fillStyle = this.timeRemaining < 60 ? "#ef4444" : "#fef08a";
+        ctx.font = "900 19px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(`TEMPO ${Math.floor(this.timeRemaining / 60)}:${String(Math.floor(this.timeRemaining % 60)).padStart(2, "0")}`, 1250, 28);
+        ctx.fillStyle = "#38bdf8";
+        ctx.font = "900 15px monospace";
+        ctx.fillText(`PTS ${String(this.score).padStart(6, "0")}`, 1250, 51);
+        ctx.textAlign = "left";
+        return;
+      }
+
       ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
       ctx.fillRect(0, 0, V_WIDTH, 56);
       ctx.fillStyle = "#f5b700";
@@ -1765,22 +1881,22 @@
       }
 
       ctx.fillStyle = "#f8fafc";
-      ctx.font = "900 15px 'Segoe UI', sans-serif";
+      ctx.font = "900 18px 'Segoe UI', sans-serif";
       ctx.fillText("PREFEITA PROFESSORA NILDA", 170, 24);
 
       ctx.fillStyle = "#38bdf8";
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 13px monospace";
       ctx.fillText("PARNAMIRIM NO RUMO CERTO • SNES 16-BIT", 170, 42);
 
       ctx.fillStyle = "#f5b700";
-      ctx.font = "900 14px 'Segoe UI', monospace";
+      ctx.font = "900 16px 'Segoe UI', monospace";
       ctx.fillText(`OBRAS: ${this.itemsCollected}/${this.totalItems}`, 580, 25);
 
       ctx.fillStyle = "#10b981";
       ctx.fillText(`DRENAGENS: ${this.drenagensAtivas}/${this.totalDrenagens}`, 580, 43);
 
       ctx.fillStyle = "#facc15";
-      ctx.font = "900 14px 'Segoe UI', monospace";
+      ctx.font = "900 16px 'Segoe UI', monospace";
       ctx.fillText(`🪙 MOEDAS: ${this.coins}`, 800, 25);
 
       ctx.fillStyle = "#fef08a";
@@ -1790,19 +1906,20 @@
       const secs = Math.floor(this.timeRemaining % 60);
       const timeStr = `${mins}:${String(secs).padStart(2, "0")}`;
       ctx.fillStyle = this.timeRemaining < 60 ? "#ef4444" : "#f8fafc";
-      ctx.font = "900 14px 'Segoe UI', monospace";
+      ctx.font = "900 16px 'Segoe UI', monospace";
       ctx.fillText(`TEMPO: ${timeStr}`, 1040, 25);
 
       ctx.fillStyle = "#94a3b8";
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 13px monospace";
       ctx.fillText("ESPAÇO: Pular | E: Falar", 1040, 43);
     }
 
     renderDialogueBox() {
-      const boxX = 140;
-      const boxY = V_HEIGHT - 210;
-      const boxW = V_WIDTH - 280;
-      const boxH = 180;
+      const portraitMode = window.innerHeight > window.innerWidth;
+      const boxW = portraitMode ? 410 : V_WIDTH - 280;
+      const boxX = (V_WIDTH - boxW) / 2;
+      const boxY = portraitMode ? V_HEIGHT - 302 : V_HEIGHT - 220;
+      const boxH = portraitMode ? 282 : 200;
 
       ctx.fillStyle = "rgba(10, 15, 30, 0.96)";
       ctx.fillRect(boxX, boxY, boxW, boxH);
@@ -1815,9 +1932,9 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(boxX + 3, boxY + 3, boxW - 6, boxH - 6);
 
-      const pSize = 130;
-      const pX = boxX + 24;
-      const pY = boxY + 25;
+      const pSize = portraitMode ? 88 : 136;
+      const pX = portraitMode ? boxX + (boxW - pSize) / 2 : boxX + 24;
+      const pY = portraitMode ? boxY + 16 : boxY + 25;
 
       ctx.fillStyle = "#1e293b";
       ctx.fillRect(pX, pY, pSize, pSize);
@@ -1827,46 +1944,55 @@
 
       const pImg = images[this.dialogue.portraitKey];
       if (pImg && pImg.complete && pImg.naturalWidth > 0) {
-        ctx.drawImage(pImg, pX + 4, pY + 4, pSize - 8, pSize - 8);
+        const inner = pSize - 8;
+        const ratio = pImg.naturalWidth / pImg.naturalHeight;
+        const drawW = ratio >= 1 ? inner : inner * ratio;
+        const drawH = ratio >= 1 ? inner / ratio : inner;
+        ctx.drawImage(pImg, pX + 4 + (inner - drawW) / 2, pY + 4 + (inner - drawH) / 2, drawW, drawH);
       }
 
       ctx.fillStyle = "#facc15";
-      ctx.font = "900 17px 'Segoe UI', sans-serif";
-      ctx.fillText(this.dialogue.speaker, boxX + pSize + 48, boxY + 38);
+      ctx.font = portraitMode ? "900 16px 'Segoe UI', sans-serif" : "900 19px 'Segoe UI', sans-serif";
+      ctx.textAlign = portraitMode ? "center" : "left";
+      ctx.fillText(this.dialogue.speaker, portraitMode ? V_WIDTH / 2 : boxX + pSize + 48, portraitMode ? boxY + 124 : boxY + 38);
 
       const fullText = this.dialogue.lines[this.dialogue.currentLine] || "";
       const visibleText = fullText.substring(0, this.dialogue.charIndex);
 
       ctx.fillStyle = "#f8fafc";
-      ctx.font = "500 15px 'Segoe UI', sans-serif";
+      ctx.font = portraitMode ? "500 15px 'Segoe UI', sans-serif" : "500 18px 'Segoe UI', sans-serif";
+      ctx.textAlign = "left";
 
-      const maxTextW = boxW - pSize - 80;
+      const textX = portraitMode ? boxX + 20 : boxX + pSize + 48;
+      const maxTextW = portraitMode ? boxW - 40 : boxW - pSize - 80;
       const words = visibleText.split(" ");
       let currentLine = "";
-      let lineY = boxY + 68;
+      let lineY = portraitMode ? boxY + 150 : boxY + 74;
 
       for (const word of words) {
         const testLine = currentLine ? currentLine + " " + word : word;
         if (ctx.measureText(testLine).width > maxTextW) {
-          ctx.fillText(currentLine, boxX + pSize + 48, lineY);
+          ctx.fillText(currentLine, textX, lineY);
           currentLine = word;
-          lineY += 24;
+          lineY += 27;
         } else {
           currentLine = testLine;
         }
       }
       if (currentLine) {
-        ctx.fillText(currentLine, boxX + pSize + 48, lineY);
+        ctx.fillText(currentLine, textX, lineY);
       }
 
       if (this.dialogue.charIndex >= fullText.length) {
         const blink = Math.floor(performance.now() * 0.005) % 2 === 0;
         if (blink) {
           ctx.fillStyle = "#f5b700";
-          ctx.font = "900 14px monospace";
-          ctx.fillText("▼ [TOQUE OU APERTE ESPAÇO/E]", boxX + boxW - 250, boxY + boxH - 16);
+          ctx.font = portraitMode ? "900 12px monospace" : "900 14px monospace";
+          ctx.textAlign = portraitMode ? "center" : "left";
+          ctx.fillText("▼ [TOQUE OU APERTE ESPAÇO/E]", portraitMode ? V_WIDTH / 2 : boxX + boxW - 250, boxY + boxH - 16);
         }
       }
+      ctx.textAlign = "left";
     }
 
     renderVictoryOverlay() {
@@ -1901,6 +2027,7 @@
     }
 
     renderTitleScreen() {
+      const portraitMode = window.innerHeight > window.innerWidth;
       const bg = images.bg_panorama;
       if (bg && bg.complete && bg.naturalWidth > 0) {
         ctx.drawImage(bg, 0, 0, V_WIDTH, V_HEIGHT);
@@ -1911,7 +2038,10 @@
 
       const logo = images.ui_logo;
       if (logo && logo.complete && logo.naturalWidth > 0) {
-        ctx.drawImage(logo, (V_WIDTH - 640) / 2, 80, 640, 200);
+        const logoW = portraitMode ? 430 : 640;
+        const logoH = portraitMode ? 135 : 200;
+        const logoY = portraitMode ? 28 : 80;
+        ctx.drawImage(logo, (V_WIDTH - logoW) / 2, logoY, logoW, logoH);
       } else {
         ctx.fillStyle = "#facc15";
         ctx.font = "900 52px 'Segoe UI', sans-serif";
@@ -1923,34 +2053,44 @@
         ctx.textAlign = "left";
       }
 
-      const pX = (V_WIDTH - 760) / 2;
+      const panelW = portraitMode ? 410 : 760;
+      const panelH = portraitMode ? 304 : 250;
+      const panelY = portraitMode ? 190 : 310;
+      const pX = (V_WIDTH - panelW) / 2;
       ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
-      ctx.fillRect(pX, 310, 760, 250);
+      ctx.fillRect(pX, panelY, panelW, panelH);
       ctx.strokeStyle = "#f5b700";
       ctx.lineWidth = 3;
-      ctx.strokeRect(pX, 310, 760, 250);
+      ctx.strokeRect(pX, panelY, panelW, panelH);
 
       ctx.fillStyle = "#facc15";
-      ctx.font = "900 18px 'Segoe UI', sans-serif";
+      ctx.font = portraitMode ? "900 18px 'Segoe UI', sans-serif" : "900 20px 'Segoe UI', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("SUPER MARIO RETRÔ: ESCADARIAS, BLOCOS [?] E ROTAS VARIADAS", V_WIDTH / 2, 345);
+      ctx.fillText(portraitMode ? "MISSÃO PARNAMIRIM 16-BIT" : "AVENTURA 16-BIT: OBRAS, ROTAS E CIDADANIA", V_WIDTH / 2, panelY + 34);
 
       ctx.fillStyle = "#e2e8f0";
-      ctx.font = "500 14px 'Segoe UI', sans-serif";
-      ctx.fillText("• Explore plataformas baixas e altas em sacadas, pontes e mirantes", V_WIDTH / 2, 380);
-      ctx.fillText("• Converse com os cidadãos aproximando-se ou tocando diretamente neles", V_WIDTH / 2, 408);
-      ctx.fillText("• Acerte os blocos [?] para moedas e estrelas e quebre os tijolos", V_WIDTH / 2, 436);
-      ctx.fillText("• Ative as bombas de macrodrenagem para escoar os alagamentos", V_WIDTH / 2, 464);
+      ctx.font = portraitMode ? "500 15px 'Segoe UI', sans-serif" : "500 16px 'Segoe UI', sans-serif";
+      if (portraitMode) {
+        ctx.fillText("• Explore as obras de Parnamirim", V_WIDTH / 2, panelY + 76);
+        ctx.fillText("• Converse com os cidadãos", V_WIDTH / 2, panelY + 103);
+        ctx.fillText("• Pule, colete e ative as drenagens", V_WIDTH / 2, panelY + 130);
+      } else {
+        ctx.fillText("• Explore plataformas baixas e altas em sacadas, pontes e mirantes", V_WIDTH / 2, 380);
+        ctx.fillText("• Aproxime-se e aperte FALAR para conversar com os cidadãos", V_WIDTH / 2, 408);
+        ctx.fillText("• Acerte os blocos para moedas e estrelas e quebre os tijolos", V_WIDTH / 2, 436);
+        ctx.fillText("• Ative as bombas de macrodrenagem para escoar os alagamentos", V_WIDTH / 2, 464);
+      }
 
       ctx.fillStyle = "#38bdf8";
-      ctx.font = "bold 14px monospace";
-      ctx.fillText("PC: Setas / A-D (Andar) | Espaço (Pulo) | E (Falar) • Celular: Controles Touch na Tela", V_WIDTH / 2, 510);
+      ctx.font = portraitMode ? "bold 14px monospace" : "bold 16px monospace";
+      const controlText = portraitMode ? "TOQUE OU APERTE ESPAÇO PARA JOGAR" : "PC: Setas / A-D (Andar) | Espaço (Pulo) | E (Falar) • Celular: Controles Touch na Tela";
+      drawFittedText(ctx, controlText, V_WIDTH / 2, portraitMode ? panelY + 176 : 510, panelW - 28, portraitMode ? 14 : 16, "monospace");
 
       const blink = Math.floor(performance.now() * 0.004) % 2 === 0;
       if (blink) {
         ctx.fillStyle = "#facc15";
-        ctx.font = "900 24px 'Segoe UI', sans-serif";
-        ctx.fillText("▶ TOQUE NA TELA OU APERTE ESPAÇO PARA JOGAR ◀", V_WIDTH / 2, 615);
+        ctx.font = portraitMode ? "900 18px 'Segoe UI', sans-serif" : "900 24px 'Segoe UI', sans-serif";
+        ctx.fillText(portraitMode ? "▶ INICIAR ◀" : "▶ TOQUE NA TELA OU APERTE ESPAÇO PARA JOGAR ◀", V_WIDTH / 2, portraitMode ? panelY + 242 : 615);
       }
       ctx.textAlign = "left";
     }

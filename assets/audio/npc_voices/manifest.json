@@ -1,0 +1,261 @@
+{
+  "notice": "Vozes sintéticas geradas por IA. Prefeita Professora Nilda permanece sem locução.",
+  "provider": "Microsoft Edge Neural TTS",
+  "characters": {
+    "portrait_pai_aluno": {
+      "character": "Seu Francisco",
+      "voice": "pt-BR-AntonioNeural",
+      "rate": "-5%",
+      "pitch": "-2Hz",
+      "lines": [
+        {
+          "file": "seu_francisco_01.mp3",
+          "bytes": 41184,
+          "text": "Olá, Prefeita Professora Nilda! Que alegria encontrar a senhora aqui no colégio!"
+        },
+        {
+          "file": "seu_francisco_02.mp3",
+          "bytes": 73008,
+          "text": "O Cartão Educa Parnamirim foi uma bênção para a nossa família! Recebemos o auxílio de quatro vírgula oito milhões de reais, distribuído para mais de vinte e quatro mil alunos."
+        },
+        {
+          "file": "seu_francisco_03.mp3",
+          "bytes": 53856,
+          "text": "Compramos todo o material escolar novinho nas papelarias da cidade. Parnamirim valoriza a educação das nossas crianças!"
+        }
+      ]
+    },
+    "portrait_moradora": {
+      "character": "Dona Socorro",
+      "voice": "pt-BR-FranciscaNeural",
+      "rate": "-12%",
+      "pitch": "-8Hz",
+      "lines": [
+        {
+          "file": "dona_socorro_01.mp3",
+          "bytes": 58896,
+          "text": "Prefeita Nilda, moro há mais de trinta anos em Monte Castelo e sempre sofremos com alagamentos que invadiam nossas casas nas chuvas."
+        },
+        {
+          "file": "dona_socorro_02.mp3",
+          "bytes": 55872,
+          "text": "Ver essas manilhas gigantes de macrodrenagem e a nova pavimentação sendo instaladas traz uma tranquilidade que nunca tivemos!"
+        },
+        {
+          "file": "dona_socorro_03.mp3",
+          "bytes": 28224,
+          "text": "Muito obrigada por olhar com tanto carinho para o nosso bairro!"
+        }
+      ]
+    },
+    "portrait_gari": {
+      "character": "Maria da Limpeza",
+      "voice": "pt-BR-ThalitaMultilingualNeural",
+      "rate": "+4%",
+      "pitch": "+3Hz",
+      "lines": [
+        {
+          "file": "maria_gari_01.mp3",
+          "bytes": 22752,
+          "text": "Prefeita Nilda, toda a equipe dos garis agradece de coração!"
+        },
+        {
+          "file": "maria_gari_02.mp3",
+          "bytes": 41184,
+          "text": "Dobrar nosso adicional de insalubridade para chegar ao percentual máximo foi uma conquista histórica que esperávamos há anos."
+        },
+        {
+          "file": "maria_gari_03.mp3",
+          "bytes": 38592,
+          "text": "Com o programa Parnamirim Cidade Limpa, estamos mantendo cada bairro limpo, podado e com muito orgulho!"
+        }
+      ]
+    },
+    "portrait_professora": {
+      "character": "Professora Cláudia",
+      "voice": "en-US-EmmaMultilingualNeural",
+      "rate": "-2%",
+      "pitch": "+1Hz",
+      "lines": [
+        {
+          "file": "professora_claudia_01.mp3",
+          "bytes": 37584,
+          "text": "Colega e Prefeita Professora Nilda, ter uma educadora na gestão transforma o nosso município!"
+        },
+        {
+          "file": "professora_claudia_02.mp3",
+          "bytes": 59328,
+          "text": "O reajuste de cinco vírgula quatro por cento, sancionado para o magistério, e a convocação dos novos professores mostram respeito real pela sala de aula."
+        },
+        {
+          "file": "professora_claudia_03.mp3",
+          "bytes": 28512,
+          "text": "Nossas escolas estão revigoradas e as bibliotecas ganharam vida nova!"
+        }
+      ]
+    },
+    "portrait_medico": {
+      "character": "Doutor Marcelo",
+      "voice": "en-US-AndrewMultilingualNeural",
+      "rate": "-4%",
+      "pitch": "-3Hz",
+      "lines": [
+        {
+          "file": "dr_marcelo_01.mp3",
+          "bytes": 55296,
+          "text": "Prefeita, o mutirão Fila Zero para exames e cirurgias eletivas já reduziu o tempo de espera de milhares de famílias em Parnamirim."
+        },
+        {
+          "file": "dr_marcelo_02.mp3",
+          "bytes": 52272,
+          "text": "As Unidades Básicas de Saúde estão com abastecimento contínuo de medicamentos essenciais e médicos especialistas no plantão."
+        },
+        {
+          "file": "dr_marcelo_03.mp3",
+          "bytes": 27936,
+          "text": "Saúde humanizada e de qualidade para toda a nossa gente!"
+        }
+      ]
+    },
+    "portrait_aluna": {
+      "character": "Sofia",
+      "voice": "en-US-AvaMultilingualNeural",
+      "rate": "+10%",
+      "pitch": "+12Hz",
+      "lines": [
+        {
+          "file": "sofia_01.mp3",
+          "bytes": 33840,
+          "text": "Tia Nilda! Minha mochila nova é linda e meu kit de fardamento veio completinho com tênis confortável!"
+        },
+        {
+          "file": "sofia_02.mp3",
+          "bytes": 29232,
+          "text": "Agora todo mundo na minha turma tem cadernos novos, lápis de cor e uniforme padronizado."
+        },
+        {
+          "file": "sofia_03.mp3",
+          "bytes": 18144,
+          "text": "Dá muito orgulho ir para a escola municipal de Parnamirim!"
+        }
+      ]
+    },
+    "portrait_engenheiro": {
+      "character": "Engenheiro Roberto",
+      "voice": "en-US-BrianMultilingualNeural",
+      "rate": "-5%",
+      "pitch": "-4Hz",
+      "lines": [
+        {
+          "file": "engenheiro_roberto_01.mp3",
+          "bytes": 44352,
+          "text": "Prefeita Nilda, o projeto estrutural de drenagem da Olavo Montenegro está avançando em ritmo acelerado!"
+        },
+        {
+          "file": "engenheiro_roberto_02.mp3",
+          "bytes": 55728,
+          "text": "Implantamos tubulação de grande diâmetro com tecnologia de escoamento rápido para acabar em definitivo com os alagamentos naquela avenida vital."
+        },
+        {
+          "file": "engenheiro_roberto_03.mp3",
+          "bytes": 34560,
+          "text": "A engenharia de Parnamirim está trabalhando com alto rigor técnico e agilidade!"
+        }
+      ]
+    },
+    "portrait_mae_cmei": {
+      "character": "Dona Lúcia",
+      "voice": "de-DE-SeraphinaMultilingualNeural",
+      "rate": "-6%",
+      "pitch": "-2Hz",
+      "lines": [
+        {
+          "file": "dona_lucia_01.mp3",
+          "bytes": 46656,
+          "text": "Prefeita Nilda, meu filho estuda no C M E I e o calor antigamente incomodava muito os bebês na hora da soneca."
+        },
+        {
+          "file": "dona_lucia_02.mp3",
+          "bytes": 47088,
+          "text": "Com as salas todas climatizadas com ar-condicionado novinho, as crianças aprendem felizes e bem cuidadas."
+        },
+        {
+          "file": "dona_lucia_03.mp3",
+          "bytes": 30960,
+          "text": "Uma creche climatizada faz toda a diferença para as mães trabalhadoras!"
+        }
+      ]
+    },
+    "portrait_guarda": {
+      "character": "Inspetor Santos",
+      "voice": "en-AU-WilliamMultilingualNeural",
+      "rate": "-3%",
+      "pitch": "-5Hz",
+      "lines": [
+        {
+          "file": "inspetor_santos_01.mp3",
+          "bytes": 56592,
+          "text": "Boa noite, Prefeita! A modernização para luminárias cem por cento em LED, de alta potência, mudou o patrulhamento preventivo em Parnamirim."
+        },
+        {
+          "file": "inspetor_santos_02.mp3",
+          "bytes": 48096,
+          "text": "Ruas bem iluminadas reduzem a criminalidade e aumentam a sensação de segurança para quem volta do trabalho ou da faculdade à noite."
+        },
+        {
+          "file": "inspetor_santos_03.mp3",
+          "bytes": 26928,
+          "text": "A Guarda Municipal opera vinte e quatro horas ao lado da comunidade!"
+        }
+      ]
+    },
+    "portrait_comerciante": {
+      "character": "Seu Pedro",
+      "voice": "de-DE-FlorianMultilingualNeural",
+      "rate": "-8%",
+      "pitch": "-6Hz",
+      "lines": [
+        {
+          "file": "seu_pedro_01.mp3",
+          "bytes": 39312,
+          "text": "Prefeita Nilda, nossas ruas centrais e avenidas de acesso ganharam asfalto liso de alta durabilidade!"
+        },
+        {
+          "file": "seu_pedro_02.mp3",
+          "bytes": 39888,
+          "text": "O trânsito flui melhor, as calçadas estão acessíveis e o comércio local registrou aumento nas vendas."
+        },
+        {
+          "file": "seu_pedro_03.mp3",
+          "bytes": 23904,
+          "text": "Parnamirim está com cara de cidade moderna e próspera!"
+        }
+      ]
+    },
+    "portrait_cajulim": {
+      "character": "Cajulim",
+      "voice": "fr-FR-RemyMultilingualNeural",
+      "rate": "+9%",
+      "pitch": "+10Hz",
+      "lines": [
+        {
+          "file": "cajulim_01.mp3",
+          "bytes": 40608,
+          "text": "Êpa, Prefeita Nilda! É o Cajulim por aqui! Que alegria ver Parnamirim tão bem cuidada e limpa!"
+        },
+        {
+          "file": "cajulim_02.mp3",
+          "bytes": 42624,
+          "text": "Com coleta seletiva, descarte consciente e obras em todos os bairros, nossa cidade é referência para todo o Rio Grande do Norte!"
+        },
+        {
+          "file": "cajulim_03.mp3",
+          "bytes": 24048,
+          "text": "Vamos juntos continuar transformando a vida das famílias potiguares!"
+        }
+      ]
+    }
+  },
+  "totalFiles": 33,
+  "totalBytes": 1357056
+}
